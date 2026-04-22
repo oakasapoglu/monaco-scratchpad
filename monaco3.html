@@ -1,0 +1,63 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monaco Computing Environment</title>
+    <style>
+        body, html, #container { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #1e1e1e; }
+        #controls { position: absolute; bottom: 10px; right: 20px; z-index: 10; font-family: monospace; }
+        button { background: #333; color: #eee; border: 1px solid #555; padding: 5px 10px; cursor: pointer; margin-left: 5px; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button onclick="evalSelectionOrLine()">Eval Line/Selection (Cmd+Enter)</button>
+        <button onclick="evalBuffer()">Eval Buffer (Cmd+Shift+Enter)</button>
+    </div>
+    <div id="container"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <script>
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            window.editor = monaco.editor.create(document.getElementById('container'), {
+                value: [
+                    "// Cmd+E: Load init.js from Gist",
+                    "// Cmd+Enter: eval current line or selection",
+                    "2 + 2"
+                ].join('\n'),
+                language: 'javascript',
+                theme: 'vs-dark',
+                fontSize: 16,
+                minimap: { enabled: false }
+            });
+
+            // Gist Loader logic
+            const loadGist = async () => {
+                const url = 'https://gist.githubusercontent.com/oakasapoglu/d385cd19bd9945ea9b426360aac21cd7/raw/init.js';
+                try {
+                    const r = await fetch(`${url}?t=${Date.now()}`);
+                    (0, eval)(await r.text());
+                    alert("init.js loaded");
+                } catch(e) { console.error(e); }
+            };
+
+            // Keybindings
+            window.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE, loadGist);
+            window.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, evalSelectionOrLine);
+            window.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter, evalBuffer);
+        });
+
+        function evalSelectionOrLine() {
+            const selection = window.editor.getSelection();
+            const model = window.editor.getModel();
+            let code = selection.isEmpty() ? model.getLineContent(selection.positionLineNumber) : model.getValueInRange(selection);
+            try { alert(eval(code)); } catch (e) { alert(e); }
+        }
+
+        function evalBuffer() {
+            try { alert(eval(window.editor.getValue())); } catch (e) { alert(e); }
+        }
+    </script>
+</body>
+</html>
